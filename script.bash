@@ -10,15 +10,18 @@ monitoramento_cpu() {
     while true; do
         echo "Uso de CPU:"
 
-        USO_CPU=$(top -bn1 | grep "Cpu(s)" | awk '{print $2}' | cut -d'%' -f1)
+        TEMPO_OCIOSO=$(top -bn1 | grep "Cpu(s)" | sed -n 's/.*, *\([0-9.]*\) *id,.*/\1/p')
 
-        USO_SISTEMA=$(top -bn1 | grep "Cpu(s)" | awk '{print $4}' | cut -d'%' -f1)
+        if [ -z "$TEMPO_OCIOSO" ]; then
+            TEMPO_OCIOSO=0.0
+            echo "Não foi possível obter o uso de CPU."
+            exit 1
+        fi
 
-        USO_TOTAL=$(echo "$USO_CPU + $USO_SISTEMA" | bc -l)
+        USO_TOTAL=$(echo "scale=2; 100 - $TEMPO_OCIOSO" | bc)
 
-        echo "Uso de CPU pelo sistema: $USO_SISTEMA%"
-        echo "Uso de CPU pelo usuário: $USO_CPU%"
-        echo "Uso total de CPU: $USO_TOTAL%"
+        echo "Uso total de CPU: $(printf "%.2f" $USO_TOTAL)%"
+        echo "(Ocioso: $TEMPO_OCIOSO%)"
         echo ""
         sleep 5
     done
